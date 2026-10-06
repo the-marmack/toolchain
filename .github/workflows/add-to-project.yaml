@@ -23,7 +23,7 @@ permissions: {}
 
 jobs:
   add:
-    uses: the-marmack/github-workflows/.github/workflows/add-to-project.yaml@a0d0170124ad80a06082078b60669d7c99d33ee6 # v6.3.0
+    uses: the-marmack/github-workflows/.github/workflows/add-to-project.yaml@c30dd535f3d8386a204c20d54f0cd52489a2b4f1 # v6.3.0
     with:
       project-url: https://github.com/orgs/the-marmack/projects/1
       app-client-id: ${{ vars.ADD_TO_PROJECT_CLIENT_ID }}

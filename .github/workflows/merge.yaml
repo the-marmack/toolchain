@@ -34,7 +34,7 @@ permissions: {}
 
 jobs:
   merge:
-    uses: the-marmack/github-workflows/.github/workflows/merge.yaml@a0d0170124ad80a06082078b60669d7c99d33ee6 # v6.3.0
+    uses: the-marmack/github-workflows/.github/workflows/merge.yaml@c30dd535f3d8386a204c20d54f0cd52489a2b4f1 # v6.3.0
     with:
       app-client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
     secrets:
