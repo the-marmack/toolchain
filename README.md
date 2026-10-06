@@ -1,9 +1,9 @@
 # toolchain
 
-Shared build tasks for the the-marmack org — pinned developer tools, mise task archetypes, and house
-lint/license policy — with a thin Makefile shim on top. Each repo consumes this library as a git submodule mounted at
-`.mise/` (bumped by Dependabot's `gitsubmodule` ecosystem) and reduces its own `Makefile` to one include and its own
-mise config to a few lines. (Formerly named `make`, from its Makefile-fragment era; GitHub redirects the old URL.)
+Shared build tasks for the the-marmack org — pinned developer tools, mise task archetypes, and house lint/license policy
+— with a thin Makefile shim on top. Each repo consumes this library as a git submodule mounted at `.mise/` (bumped by
+Dependabot's `gitsubmodule` ecosystem) and reduces its own `Makefile` to one include and its own mise config to a few
+lines. (Formerly named `make`, from its Makefile-fragment era; GitHub redirects the old URL.)
 
 ## Layout
 
