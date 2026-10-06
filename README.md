@@ -2,11 +2,11 @@
 
 > Forked from [`bitwise-media-group/toolchain`](https://github.com/bitwise-media-group/toolchain) (MIT).
 
-Shared build tasks for the the-marmack org — pinned developer tools, mise task archetypes, and house
-lint/license policy — with a thin Makefile shim on top. Each repo consumes this library as a git submodule mounted at
-`.mise/` (bumped to each new semver tag by Renovate's `git-submodules` manager), pins its own language runtime in its
-root `mise.toml`, and reduces its `Makefile` to one include. (Formerly named `make`, from its Makefile-fragment era;
-GitHub redirects the old URL.)
+Shared build tasks for the the-marmack org — pinned developer tools, mise task archetypes, and house lint/license policy
+— with a thin Makefile shim on top. Each repo consumes this library as a git submodule mounted at `.mise/` (bumped to
+each new semver tag by Renovate's `git-submodules` manager), pins its own language runtime in its root `mise.toml`, and
+reduces its `Makefile` to one include. (Formerly named `make`, from its Makefile-fragment era; GitHub redirects the old
+URL.)
 
 ## Layout
 
@@ -203,8 +203,8 @@ Consuming repos should keep `coverage/` (and `node_modules/`, `.venv/`, `site/`,
 ### Updating the shared pins
 
 Bumping a shared tool for the **whole fleet** is one commit here plus a submodule bump in the consumers. The org
-Renovate bot ([`renovate-config`](https://github.com/the-marmack/renovate-config)) does it: every `[tools]`
-entry in `config.toml` is an exact pin, and the bot opens one PR per tool that bumps the pin and regenerates `mise.lock`
+Renovate bot ([`renovate-config`](https://github.com/the-marmack/renovate-config)) does it: every `[tools]` entry in
+`config.toml` is an exact pin, and the bot opens one PR per tool that bumps the pin and regenerates `mise.lock`
 (`mise lock`) in the same commit, under the org's 3-day release cooldown (`minimumReleaseAge`, surfaced as the
 `renovate/stability-days` check). Stable minor/patch bumps automerge; majors and 0.x wait for review. The repo-local
 `.github/renovate.json5` teaches the mise manager about the root `config.toml` (the dogfood inversion hides it from the
