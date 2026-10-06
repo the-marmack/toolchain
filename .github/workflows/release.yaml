@@ -1,0 +1,102 @@
+# Copyright 2026 BitWise Media Group Ltd
+# SPDX-License-Identifier: MIT
+
+# Release pipeline — thin caller for the org's reusable release workflow.
+# release-please watches main and keeps a release PR current from the Conventional
+# Commit history; when that PR merges the workflow cuts the vX.Y.Z tag + GitHub
+# release. This repo ships no binaries (no .goreleaser.yaml) and no docs site (no
+# zensical.toml), so the goreleaser and docs jobs are skipped — release-please is
+# the whole pipeline. The product is the mise task library; consumers track the
+# `release` branch of this repo as a submodule, which is fast-forwarded to each
+# tagged release.
+#
+# vanity-tags is left at its default (false): consumers track the `release`
+# branch rather than a floating vN tag, so a vanity tag would have no consumer.
+#
+# app-client-id/app-private-key author the release PR as the "FF Merge" App rather
+# than GITHUB_TOKEN — a GITHUB_TOKEN-authored push fires no workflow_run, so a
+# release PR opened that way never triggers the auto-merge in merge.yaml.
+#
+# The reusable workflow is pinned to a full commit SHA (tag in the comment) so a
+# moved tag can never change what runs; Renovate keeps the pin fresh.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  # allow cutting a release manually from the Actions tab
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  release:
+    uses: the-marmack/github-workflows/.github/workflows/release.yaml@a0d0170124ad80a06082078b60669d7c99d33ee6 # v6.3.0
+    # Ceiling for the reusable workflow's jobs. GitHub resolves a reusable
+    # workflow's permissions as the union of every job and ignores `if:`, so the
+    # caller must grant the (here-skipped) goreleaser and docs jobs' scopes too —
+    # a missing scope startup-fails the whole run.
+    permissions:
+      # create the release/tag and upload assets
+      contents: write
+      # release-please creates pr labels via the issues api
+      issues: write
+      # release-please opens the release pull request
+      pull-requests: write
+      # cosign keyless signing (goreleaser) + the docs job's Pages OIDC deploy
+      id-token: write
+      # github build-provenance attestation
+      attestations: write
+      # artifact storage record for the attestation
+      artifact-metadata: write
+      # push container images to ghcr (goreleaser dockers_v2, when configured)
+      packages: write
+      # publish the docs site to GitHub Pages (docs job, gated on zensical.toml)
+      pages: write
+    with:
+      # author the release PR as the FF Merge App so it can auto-merge (a
+      # GITHUB_TOKEN-authored push fires no workflow_run to trigger the merge)
+      app-client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
+    secrets:
+      # private key for the App that authors the release PR (same App as /merge)
+      app-private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}
+
+  # Fast-forward the `release` branch to the freshly tagged commit, so a consumer
+  # that pins the `.mise` submodule to this branch (`.gitmodules` → `branch =
+  # release`) sees each cut release there; Renovate's git-submodules manager
+  # proposes the downstream bump from the semver tag, not this branch. Gated on
+  # release_created so it fires only on the merge release-please turns into a tag,
+  # not on every push to main. The push is deliberately non-force: a fast-forward is
+  # the invariant, so if `release` ever diverged from the tagged history the push
+  # fails loudly rather than rewriting what consumers have pinned.
+  #
+  # `release` is protected by a ruleset, so the push goes out under the FF Merge App
+  # token (same App as the release PR and /merge) — it is on the ruleset's bypass
+  # list, whereas GITHUB_TOKEN's github-actions bot is not. The App token does the
+  # privileged work; the caller grants GITHUB_TOKEN nothing.
+  push-release-branch:
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Mint a github app installation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
+          private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}
+          # only needs to move the branch ref
+          permission-contents: write
+      # the persisted App token IS how the push step below authenticates
+      - name: Checkout repository # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # push under the App token (ruleset bypass), and fetch full history so the
+          # tagged release commit is present locally to push
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+      - name: Fast-forward release branch to the tagged commit
+        env:
+          SHA: ${{ needs.release.outputs.sha }}
+        run: git push origin "${SHA}:refs/heads/release"

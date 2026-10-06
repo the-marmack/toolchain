@@ -1,0 +1,97 @@
+# Copyright 2026 BitWise Media Group Ltd
+# SPDX-License-Identifier: MIT
+#
+# terraform — archetype for a Terraform module (cloud-accounts environments,
+# safe-settings). Generalises cloud-accounts' cloud.mk.
+#
+# Include AFTER common/tasks.toml in the consumer's root mise.toml:
+#   [task_config]
+#   includes = [".mise/common/tasks.toml", ".mise/archetypes/terraform/tasks.toml"]
+#
+# Every task runs in {{cwd}}: the invoking Makefile typically lives below the
+# repo root (environments/<name>/), and plan/apply must target that module.
+# cloud-accounts keeps its root fan-out aggregator (environments/<name>
+# recursion) unchanged; only the leaf environments adopt this archetype.
+#
+# scripts/tf-run.sh wraps every state-touching invocation: it injects
+# secrets/env via dotty only when the module directory carries a .env.dotty
+# and calls the binary directly otherwise (dotty fails hard with nothing to
+# inject). dotty is never mise-installed (see the library config header) —
+# it's a local-dev convenience CI never needs, so the wrapper checks for it
+# on PATH itself rather than any task carrying a `tools` map for it.
+#
+# {{vars.terraform_binary}} picks the driver: "terraform" (the shared pin) by
+# default; an OpenTofu repo sets it to "tofu" and adds the opentofu pin to its
+# root mise.toml [tools].
+#
+# The house prose format/lint is part of fmt/lint like every archetype; it
+# runs from the repo root even when make is invoked in an environment
+# subdirectory, so a repo-wide README sweep rides along with each module.
+# The license tasks are deliberately NOT wired in: addlicense would stamp
+# headers into .tf files.
+
+[init]
+description = "initialise the terraform module"
+dir = "{{cwd}}"
+run = "{{config_root}}/.mise/archetypes/terraform/scripts/tf-run.sh {{vars.terraform_binary}} init"
+
+# Backend-less init used by lint (validate needs an initialised module but no
+# remote state).
+[init-no-backend]
+hide = true
+dir = "{{cwd}}"
+run = "{{config_root}}/.mise/archetypes/terraform/scripts/tf-run.sh {{vars.terraform_binary}} init -backend=false -input=false"
+
+[plan]
+description = "plan infrastructure changes"
+dir = "{{cwd}}"
+run = "{{config_root}}/.mise/archetypes/terraform/scripts/tf-run.sh {{vars.terraform_binary}} plan -out=plan.tfplan"
+
+[apply]
+description = "apply infrastructure changes"
+dir = "{{cwd}}"
+run = [{ task = "plan" }, "{{config_root}}/.mise/archetypes/terraform/scripts/tf-run.sh {{vars.terraform_binary}} apply plan.tfplan"]
+
+# Auto-format pass wired into `fmt`.
+[tf-fmt]
+hide = true
+dir = "{{cwd}}"
+run = "{{vars.terraform_binary}} fmt -recursive"
+
+# Check-mode pass wired into `lint`.
+[tf-lint]
+hide = true
+dir = "{{cwd}}"
+run = [{ task = "init-no-backend" }, "{{vars.terraform_binary}} validate .", "tflint"]
+
+# Doc generation wired into `docs`.
+[tf-docs]
+hide = true
+dir = "{{cwd}}"
+run = "terraform-docs ."
+
+[fmt]
+description = "terraform fmt -recursive + prose format"
+run = [{ task = "tf-fmt" }, { task = "fmt-prose" }]
+
+[lint]
+description = "terraform validate + tflint + prose, container, shell and workflow checks"
+run = [
+  { task = "tf-lint" },
+  { task = "lint-containers" },
+  { task = "lint-shell" },
+  { task = "lint-workflows" },
+  { task = "lint-prose" },
+]
+
+[docs]
+description = "generate module docs (terraform-docs)"
+run = [{ task = "tf-docs" }]
+
+[ci]
+description = "the checks the reusable CI workflow runs"
+run = [{ task = "lint" }, { task = "docs" }]
+
+[pr]
+description = "full local gate before a pull request"
+run = [{ task = "fmt" }, { task = "lint" }, { task = "docs" }]
