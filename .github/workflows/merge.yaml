@@ -11,7 +11,7 @@
 # auto-merge. "Continuous Integration" is this repo's ci.yaml caller.
 #
 # Prerequisites (one-time, org-wide — see the-marmack/ff-merge):
-#   - org variable FF_MERGE_CLIENT_ID and org secret FF_MERGE_PRIVATE_KEY
+#   - org secrets FF_MERGE_CLIENT_ID and FF_MERGE_PRIVATE_KEY
 #   - the "FF Merge" App installed on this repo and in the ruleset bypass list
 #
 # Pinned to a full commit SHA (tag in the comment); Renovate keeps it fresh.
@@ -34,8 +34,7 @@ permissions: {}
 
 jobs:
   merge:
-    uses: the-marmack/github-workflows/.github/workflows/merge.yaml@c30dd535f3d8386a204c20d54f0cd52489a2b4f1 # v6.3.0
-    with:
-      app-client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
+    uses: the-marmack/github-workflows/.github/workflows/merge.yaml@7350928cd5ff2fd5dde4908d9e8b17b2497109cc # main
     secrets:
+      app-client-id: ${{ secrets.FF_MERGE_CLIENT_ID }}
       app-private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}

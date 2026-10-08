@@ -31,7 +31,7 @@ permissions: {}
 
 jobs:
   release:
-    uses: the-marmack/github-workflows/.github/workflows/release.yaml@c30dd535f3d8386a204c20d54f0cd52489a2b4f1 # v6.3.0
+    uses: the-marmack/github-workflows/.github/workflows/release.yaml@7350928cd5ff2fd5dde4908d9e8b17b2497109cc # main
     # Ceiling for the reusable workflow's jobs. GitHub resolves a reusable
     # workflow's permissions as the union of every job and ignores `if:`, so the
     # caller must grant the (here-skipped) goreleaser and docs jobs' scopes too —
@@ -53,11 +53,10 @@ jobs:
       packages: write
       # publish the docs site to GitHub Pages (docs job, gated on zensical.toml)
       pages: write
-    with:
+    secrets:
       # author the release PR as the FF Merge App so it can auto-merge (a
       # GITHUB_TOKEN-authored push fires no workflow_run to trigger the merge)
-      app-client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
-    secrets:
+      app-client-id: ${{ secrets.FF_MERGE_CLIENT_ID }}
       # private key for the App that authors the release PR (same App as /merge)
       app-private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}
 
@@ -84,7 +83,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ vars.FF_MERGE_CLIENT_ID }}
+          client-id: ${{ secrets.FF_MERGE_CLIENT_ID }}
           private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}
           # only needs to move the branch ref
           permission-contents: write
