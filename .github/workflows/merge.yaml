@@ -35,6 +35,9 @@ permissions: {}
 jobs:
   merge:
     uses: the-marmack/github-workflows/.github/workflows/merge.yaml@7350928cd5ff2fd5dde4908d9e8b17b2497109cc # main
+    with:
+      # merge without an approving review: authors can't approve their own PRs, and this org has one maintainer
+      require-approval: false
     secrets:
       app-client-id: ${{ secrets.FF_MERGE_CLIENT_ID }}
       app-private-key: ${{ secrets.FF_MERGE_PRIVATE_KEY }}
